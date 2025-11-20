@@ -529,10 +529,7 @@ impl<'c> SwigWallet<'c> {
         instructions: Vec<Instruction>,
         alt: Option<&[AddressLookupTableAccount]>,
     ) -> Result<Signature, SwigError> {
-        let current_slot = self.get_current_slot()?;
-        let sign_instructions = self
-            .instruction_builder
-            .sign_instruction_with_sub_account(instructions, Some(current_slot))?;
+        let sign_instructions = self.get_sign_instructions_with_sub_account(instructions)?;
 
         let alt = if alt.is_some() { alt.unwrap() } else { &[] };
 
@@ -552,6 +549,27 @@ impl<'c> SwigWallet<'c> {
             self.instruction_builder.increment_odometer()?;
         }
         tx_result
+    }
+
+    /// Gets the sign instructions with a sub-account for the provided inner instructions.
+    ///
+    /// # Arguments
+    ///
+    /// * `inner_instructions` - Vector of instructions to sign
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing the sign instructions  or a `SwigError`
+    pub fn get_sign_instructions_with_sub_account(
+        &mut self,
+        inner_instructions: Vec<Instruction>,
+    ) -> Result<Vec<Instruction>, SwigError> {
+        let sign_ix = self.instruction_builder.sign_instruction_with_sub_account(
+            inner_instructions,
+            Some(self.get_current_slot()?),
+        )?;
+
+        Ok(sign_ix)
     }
 
     /// Withdraws native SOL from a sub-account
