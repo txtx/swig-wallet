@@ -401,9 +401,7 @@ impl<'c> SwigWallet<'c> {
         inner_instructions: Vec<Instruction>,
         alt: Option<&[AddressLookupTableAccount]>,
     ) -> Result<Signature, SwigError> {
-        let sign_ix = self
-            .instruction_builder
-            .sign_v2_instruction(inner_instructions, Some(self.get_current_slot()?))?;
+        let sign_ix = self.get_sign_v2_instructions(inner_instructions)?;
 
         let alt = if alt.is_some() { alt.unwrap() } else { &[] };
 
@@ -422,6 +420,23 @@ impl<'c> SwigWallet<'c> {
             self.instruction_builder.increment_odometer()?;
         }
         tx_result
+    }
+
+    /// Gets the SignV2 instructions for the provided inner instructions
+    ///
+    /// # Arguments
+    /// * `inner_instructions` - Vector of instructions to sign
+    /// # Returns
+    /// Returns a `Result` containing the sign v2 instructions or a `SwigError`
+    pub fn get_sign_v2_instructions(
+        &mut self,
+        inner_instructions: Vec<Instruction>,
+    ) -> Result<Vec<Instruction>, SwigError> {
+        let sign_ix = self
+            .instruction_builder
+            .sign_v2_instruction(inner_instructions, Some(self.get_current_slot()?))?;
+
+        Ok(sign_ix)
     }
 
     /// Replaces an existing authority with a new one
