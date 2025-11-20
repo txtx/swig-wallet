@@ -294,6 +294,41 @@ impl<'c> SwigWallet<'c> {
         }
     }
 
+    /// Partially signs a [VersionedTransaction] with the wallet's keypairs without
+    /// overriding existing signatures and without broadcasting it to the network.
+    ///
+    /// # Arguments
+    /// * `transaction` - The mutable reference to the [VersionedTransaction] to partially sign
+    ///
+    /// # Returns
+    /// * `Result<(), SwigError>` - Ok if successful, or a [SwigError] if signing fails
+    pub fn partial_sign_transaction(
+        &mut self,
+        transaction: &mut VersionedTransaction,
+    ) -> Result<(), SwigError> {
+        // Don't overwrite blockhash if there's a signature present
+        if transaction.signatures.is_empty() {
+            transaction
+                .message
+                .set_recent_blockhash(self.get_current_blockhash()?);
+        }
+
+        let message_bytes = transaction.message.serialize();
+        for signer in self.get_keypairs()? {
+            let signer_pubkey = signer.pubkey();
+            let position = transaction
+                .message
+                .static_account_keys()
+                .iter()
+                .position(|&k| k == signer_pubkey)
+                .unwrap();
+            let signature = signer.sign_message(&message_bytes);
+            transaction.signatures[position] = signature;
+        }
+
+        Ok(())
+    }
+
     /// Signs a transaction containing the provided instructions
     ///
     /// # Arguments
